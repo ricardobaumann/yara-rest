@@ -7,11 +7,29 @@ class BusinessError extends Error{
     }
 }
 
+function sumByProduct(transactions) {
+    var holder = {};
+
+    transactions.forEach(function(d) {
+        if (holder.hasOwnProperty(d.product_id)) {
+            holder[d.product_id] = holder[d.product_id] + d.amount;
+        } else {
+            holder[d.product_id] = d.amount;
+        }
+    });
+
+    var obj2 = [];
+
+    for (var prop in holder) {
+        obj2.push({ product_id: prop, amount: holder[prop] });
+    }
+    return obj2;
+}
+
 const createTransaction = (transactions, id)=> {
     return prisma.$transaction(async tx => {
 
         let warehouse = await tx.warehouse.findUnique({where: {id: id}});
-        console.log(`Warehouse: ${warehouse == null}`)
         if (warehouse == null) {
             throw new BusinessError("INVALID_WAREHOUSE", 400);
         }
@@ -31,8 +49,29 @@ const createTransaction = (transactions, id)=> {
                     hazardous: whHazardous
                 }
             })
-            warehouse = await tx.warehouse.findUnique({where: {id: id}});
         }
+
+        let amountsPerProduct = sumByProduct(transactions);
+        console.log(`Amounts per product: ${JSON.stringify(amountsPerProduct)}`);
+        const dbAmountsPerProduct = await tx.transaction.groupBy({
+            by: "product_id",
+            where: {
+                product_id: {
+                    in: amountsPerProduct.map(prod => prod.product_id)
+                },
+                warehouse_id: id
+            },
+            _sum: {
+              amount: true
+            }
+        });
+        amountsPerProduct.forEach(amountPerProd => {
+            let dbAmountPerProd = dbAmountsPerProduct.find(dbProd => dbProd.product_id === amountPerProd.product_id);
+            let dbAmount = dbAmountPerProd == null ? 0 : dbAmountPerProd['_sum'].amount;
+            if ((parseFloat(dbAmount) + parseFloat(amountPerProd.amount)) < 0) {
+                throw new BusinessError("INVALID_PRODUCT_AMOUNT", 400);
+            }
+        })
 
         await tx.transaction.createMany({
             data: transactions

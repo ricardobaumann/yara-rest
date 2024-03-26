@@ -155,6 +155,61 @@ describe("Create transactions",()=> {
         expect(await prisma.transaction.count()).toBe(0);
     })
 
+    it("should not allow negative product amount",async () => {
+        let productId = crypto.randomUUID().toString();
+        await prisma.transaction.create({
+            data: {
+                product_id: productId,
+                hazardous: false,
+                amount: 20,
+                id: crypto.randomUUID().toString(),
+                batch_id: crypto.randomUUID().toString(),
+                warehouse_id: nonHazardousWh
+            }
+        })
+        const response = await request(app)
+            .post(`/warehouses/${nonHazardousWh}/transactions`)
+            .send([
+                {
+                    product_id: productId,
+                    hazardous: false,
+                    amount: -100.5
+                },
+                {
+                    product_id: productId,
+                    hazardous: false,
+                    amount: -100.5
+                }
+            ]);
+        expect(response.status).toBe(400);
+        expect(response.body).toStrictEqual({
+            message: "INVALID_PRODUCT_AMOUNT"
+        });
+        expect(await prisma.transaction.count()).toBe(1);
+    })
+
+    it("should not allow negative product amount on empty warehouse",async () => {
+        const response = await request(app)
+            .post(`/warehouses/${nonHazardousWh}/transactions`)
+            .send([
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: false,
+                    amount: -100.5
+                },
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: false,
+                    amount: -100.5
+                }
+            ]);
+        expect(response.status).toBe(400);
+        expect(response.body).toStrictEqual({
+            message: "INVALID_PRODUCT_AMOUNT"
+        });
+        expect(await prisma.transaction.count()).toBe(0);
+    })
+
     it("should validate warehouse id",async () => {
         const response = await request(app)
             .post(`/warehouses/foobar/transactions`)
