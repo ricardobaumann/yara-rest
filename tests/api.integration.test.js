@@ -5,6 +5,9 @@ const request = require('supertest');
 
 const app = require("../app")
 const warehouseId = crypto.randomUUID().toString();
+const hazardousWhId = crypto.randomUUID().toString();
+const nonHazardousWh = crypto.randomUUID().toString();
+
 describe('GET warehouses', () => {
 
     beforeEach(async () => {
@@ -15,6 +18,20 @@ describe('GET warehouses', () => {
                 data: {
                     id: warehouseId,
                     code: "ABC"
+                }
+            }),
+            prisma.warehouse.create({
+                data: {
+                    id: hazardousWhId,
+                    code: "FOO",
+                    hazardous: true
+                }
+            }),
+            prisma.warehouse.create({
+                data: {
+                    id: nonHazardousWh,
+                    code: "BAR",
+                    hazardous: false
                 }
             })
        ])
@@ -28,6 +45,16 @@ describe('GET warehouses', () => {
                 id: warehouseId,
                 code: "ABC",
                 hazardous: null
+            },
+            {
+                id: hazardousWhId,
+                code: "FOO",
+                hazardous: true
+            },
+            {
+                id: nonHazardousWh,
+                code: "BAR",
+                hazardous: false
             }
         ]);
     })
@@ -48,7 +75,7 @@ describe("Create transactions",()=> {
         ])
     })
 
-    it("should create transactions",async () => {
+    it("should create transactions and flag warehouse accordingly",async () => {
         const response = await request(app)
             .post(`/warehouses/${warehouseId}/transactions`)
             .send([
@@ -65,6 +92,44 @@ describe("Create transactions",()=> {
             ]);
         expect(response.status).toBe(200);
         expect(await prisma.transaction.count()).toBe(2);
+        expect(await prisma.warehouse.findUnique({where: {id: warehouseId}}))
+            .toStrictEqual({
+              code: "ABC",
+               hazardous: true,
+               id: warehouseId
+            });
+    })
+
+    it("should not allow non-hazardous products in a hazardous warehouse",async () => {
+        const response = await request(app)
+            .post(`/warehouses/${hazardousWhId}/transactions`)
+            .send([
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: false,
+                    amount: 100.5
+                }
+            ]);
+        expect(response.status).toBe(400);
+        expect(response.body).toStrictEqual({
+            message: "INVALID_WAREHOUSE"
+        });
+    })
+
+    it("should not allow hazardous products in a non-hazardous warehouse",async () => {
+        const response = await request(app)
+            .post(`/warehouses/${nonHazardousWh}/transactions`)
+            .send([
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: true,
+                    amount: 100.5
+                }
+            ]);
+        expect(response.status).toBe(400);
+        expect(response.body).toStrictEqual({
+            message: "INVALID_WAREHOUSE"
+        });
     })
 
     it("should validate warehouse id",async () => {
