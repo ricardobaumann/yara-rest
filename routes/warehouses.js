@@ -14,16 +14,11 @@ router.get('/', async function (req, res, next) {
 });
 
 router.post("/:id/transactions",parseUrlencoded, async function(req, res, next){
-    const result = await prisma.transaction.createMany({
-        data: req.body.map(item => {
-            return  {
-                warehouse_id: req.params.id,
-                batch_id: crypto.randomUUID().toString(),
-                id: crypto.randomUUID().toString(),
-                ...item
-            }
+    await createTransaction(req.body, req.params.id)
+        .then(value => {
+            res.json(value);
+        }).catch(reason => {
+            res.status(reason.code).json({message: reason.message});
         })
-    });
-    res.json(result);
 });
 module.exports = router;

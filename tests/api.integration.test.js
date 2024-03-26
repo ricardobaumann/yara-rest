@@ -65,4 +65,20 @@ describe("Create transactions",()=> {
         expect(response.status).toBe(200);
         expect(await prisma.transaction.count()).toBe(2);
     })
+
+    it("should validate warehouse id",async () => {
+        const response = await request(app)
+            .post(`/warehouses/foobar/transactions`)
+            .send([
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: true,
+                    amount: 100.5
+                }
+            ]);
+        expect(response.status).toBe(400);
+        expect(response.body).toStrictEqual({
+            message: "INVALID_WAREHOUSE"
+        });
+    })
 })
