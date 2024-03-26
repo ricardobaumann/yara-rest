@@ -26,8 +26,8 @@ router.post("/:id/transactions",
             .json({errors: errors.array()})
     }
     await createTransaction(req.body, req.params.id)
-        .then(value => {
-            res.json(value);
+        .then(() => {
+            res.json();
         }).catch(reason => {
             res.status(reason.code).json({message: reason.message});
         })

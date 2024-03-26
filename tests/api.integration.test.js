@@ -26,7 +26,8 @@ describe('GET warehouses', () => {
         expect(response.body).toStrictEqual([
             {
                 id: warehouseId,
-                code: "ABC"
+                code: "ABC",
+                hazardous: null
             }
         ]);
     })
@@ -84,7 +85,7 @@ describe("Create transactions",()=> {
 
     it("should validate body attributes",async () => {
         const response = await request(app)
-            .post(`/warehouses/foobar/transactions`)
+            .post(`/warehouses/${warehouseId}/transactions`)
             .send([
                 {
                     product_id: "",
@@ -92,7 +93,6 @@ describe("Create transactions",()=> {
             ]);
         expect(response.status).toBe(422);
         let errors = response.body.errors;
-        console.log(errors);
         expect(errors[0].path).toBe("[0].product_id");
         expect(errors[0].msg).toBe("Invalid value");
 
@@ -105,4 +105,6 @@ describe("Create transactions",()=> {
         expect(errors[3].path).toBe("[0].hazardous");
         expect(errors[3].msg).toBe("Invalid value");
     })
+
+
 })
