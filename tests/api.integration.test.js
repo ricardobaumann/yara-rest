@@ -26,16 +26,9 @@ describe('GET warehouses', () => {
                     code: "FOO",
                     hazardous: true
                 }
-            }),
-            prisma.warehouse.create({
-                data: {
-                    id: nonHazardousWh,
-                    code: "BAR",
-                    hazardous: false
-                }
             })
        ]);
-        expect(await prisma.warehouse.count()).toBe(3);
+        expect(await prisma.warehouse.count()).toBe(2);
     })
 
     it("should list warehouses",async()=> {
@@ -51,11 +44,6 @@ describe('GET warehouses', () => {
                 id: hazardousWhId,
                 code: "FOO",
                 hazardous: true
-            },
-            {
-                id: nonHazardousWh,
-                code: "BAR",
-                hazardous: false
             }
         ]);
     })

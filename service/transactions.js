@@ -49,7 +49,7 @@ async function validateProductAmount(transactions, id, tx) {
     })
 }
 
-async function validateAndUpdateWh(transactions, id, tx) {
+async function validateAndUpdateHazardousFlag(transactions, id, tx) {
     let batchFirstHazardous = transactions[0]['hazardous'];
     if (!(transactions.every(item => item['hazardous'] === batchFirstHazardous))) {
         throw new BusinessError("HAZARDOUS_MIX_NOT_ALLOWED", 400);
@@ -79,7 +79,7 @@ async function validateAndUpdateWh(transactions, id, tx) {
 const createTransaction = (transactions, id)=> {
     return prisma.$transaction(async tx => {
 
-        await validateAndUpdateWh(transactions, id, tx);
+        await validateAndUpdateHazardousFlag(transactions, id, tx);
 
         await validateProductAmount(transactions, id, tx);
 

@@ -4,13 +4,13 @@ const dotenv = require("dotenv");
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+dotenv.config();
 
 const initDB = require("./db/init-db");
+initDB().then(()=> console.log("DB initialized"));
 
-var indexRouter = require('./routes/index');
 var warehousesRouter = require('./routes/warehouses');
 
-dotenv.config();
 var app = express();
 
 // view engine setup
@@ -23,7 +23,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
 app.use('/warehouses', warehousesRouter);
 
 // catch 404 and forward to error handler
@@ -44,7 +43,6 @@ app.use(function(err, req, res, next) {
 
 const port = 3001;
 
-//initDB().then(()=> console.log("DB initialized"));
 app.listen(port, () => console.log(`REST Backend running at ${port}`))
 
 module.exports = app;

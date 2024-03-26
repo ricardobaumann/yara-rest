@@ -5,7 +5,7 @@ const createTransaction = require("../service/transactions")
 const bodyParser = require('body-parser');
 const parseUrlencoded = bodyParser.urlencoded({ extended: false });
 const { body, validationResult} = require("express-validator");
-/* GET users listing. */
+
 router.get('/', async function (req, res, next) {
   await prisma.warehouse.findMany()
       .then(data => {
