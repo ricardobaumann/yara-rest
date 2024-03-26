@@ -34,7 +34,8 @@ describe('GET warehouses', () => {
                     hazardous: false
                 }
             })
-       ])
+       ]);
+        expect(await prisma.warehouse.count()).toBe(3);
     })
 
     it("should list warehouses",async()=> {
@@ -71,8 +72,23 @@ describe("Create transactions",()=> {
                     id: warehouseId,
                     code: "ABC"
                 }
+            }),
+            prisma.warehouse.create({
+                data: {
+                    id: hazardousWhId,
+                    code: "FOO",
+                    hazardous: true
+                }
+            }),
+            prisma.warehouse.create({
+                data: {
+                    id: nonHazardousWh,
+                    code: "BAR",
+                    hazardous: false
+                }
             })
-        ])
+        ]);
+        expect(await prisma.warehouse.count()).toBe(3);
     })
 
     it("should create transactions and flag warehouse accordingly",async () => {
@@ -108,11 +124,17 @@ describe("Create transactions",()=> {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: false,
                     amount: 100.5
+                },
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: true,
+                    amount: 100.5
                 }
             ]);
         expect(response.status).toBe(400);
+        expect(await prisma.transaction.count()).toBe(0);
         expect(response.body).toStrictEqual({
-            message: "INVALID_WAREHOUSE"
+            message: "INVALID_HAZARDOUS_FLAG"
         });
     })
 
@@ -128,8 +150,9 @@ describe("Create transactions",()=> {
             ]);
         expect(response.status).toBe(400);
         expect(response.body).toStrictEqual({
-            message: "INVALID_WAREHOUSE"
+            message: "INVALID_HAZARDOUS_FLAG"
         });
+        expect(await prisma.transaction.count()).toBe(0);
     })
 
     it("should validate warehouse id",async () => {

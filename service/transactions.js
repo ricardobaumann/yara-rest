@@ -11,7 +11,8 @@ const createTransaction = (transactions, id)=> {
     return prisma.$transaction(async tx => {
 
         let warehouse = await tx.warehouse.findUnique({where: {id: id}});
-        if (!warehouse) {
+        console.log(`Warehouse: ${warehouse == null}`)
+        if (warehouse == null) {
             throw new BusinessError("INVALID_WAREHOUSE", 400);
         }
 
