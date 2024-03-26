@@ -2,6 +2,7 @@ const prisma = require("../db/prisma");
 
 const initDB = async () => {
     return prisma.$transaction([
+        prisma.transaction.deleteMany(),
         prisma.warehouse.deleteMany(),
         prisma.warehouse.create({
             data: {
