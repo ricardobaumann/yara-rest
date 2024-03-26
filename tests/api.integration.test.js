@@ -134,7 +134,7 @@ describe("Create transactions",()=> {
         expect(response.status).toBe(400);
         expect(await prisma.transaction.count()).toBe(0);
         expect(response.body).toStrictEqual({
-            message: "INVALID_HAZARDOUS_FLAG"
+            message: "HAZARDOUS_MIX_NOT_ALLOWED"
         });
     })
 

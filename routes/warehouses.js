@@ -14,7 +14,7 @@ router.get('/', async function (req, res, next) {
 });
 
 router.post("/:id/transactions",
-    body().isArray(),
+    body().isArray().notEmpty(),
     body("*.product_id").exists().notEmpty().isString(),
     body("*.amount").exists().isNumeric(),
     body("*.hazardous").exists().isBoolean(),

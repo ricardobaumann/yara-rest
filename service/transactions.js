@@ -8,7 +8,7 @@ class BusinessError extends Error{
 }
 
 function sumByProduct(transactions) {
-    var holder = {};
+    let holder = {};
 
     transactions.forEach(function(d) {
         if (holder.hasOwnProperty(d.product_id)) {
@@ -18,12 +18,12 @@ function sumByProduct(transactions) {
         }
     });
 
-    var obj2 = [];
+    let newObj = [];
 
-    for (var prop in holder) {
-        obj2.push({ product_id: prop, amount: holder[prop] });
+    for (let prop in holder) {
+        newObj.push({ product_id: prop, amount: holder[prop] });
     }
-    return obj2;
+    return newObj;
 }
 
 async function validateProductAmount(transactions, id, tx) {
@@ -50,24 +50,27 @@ async function validateProductAmount(transactions, id, tx) {
 }
 
 async function validateAndUpdateWh(transactions, id, tx) {
+    let batchFirstHazardous = transactions[0]['hazardous'];
+    if (!(transactions.every(item => item['hazardous'] === batchFirstHazardous))) {
+        throw new BusinessError("HAZARDOUS_MIX_NOT_ALLOWED", 400);
+    }
     let warehouse = await tx.warehouse.findUnique({where: {id: id}});
     if (warehouse == null) {
         throw new BusinessError("INVALID_WAREHOUSE", 400);
     }
 
     if (warehouse.hazardous !== null) {
-        let hazNotMatches = transactions.some(item => item['hazardous'] !== warehouse.hazardous);
+        let hazNotMatches = batchFirstHazardous !== warehouse.hazardous;
         if (hazNotMatches) {
             throw new BusinessError("INVALID_HAZARDOUS_FLAG", 400);
         }
     } else {
-        let whHazardous = transactions[0]['hazardous'];
         await tx.warehouse.update({
             where: {
                 id: id
             },
             data: {
-                hazardous: whHazardous
+                hazardous: batchFirstHazardous
             }
         })
     }
