@@ -26,52 +26,59 @@ function sumByProduct(transactions) {
     return obj2;
 }
 
+async function validateProductAmount(transactions, id, tx) {
+    let amountsPerProduct = sumByProduct(transactions);
+    const dbAmountsPerProduct = await tx.transaction.groupBy({
+        by: "product_id",
+        where: {
+            product_id: {
+                in: amountsPerProduct.map(prod => prod.product_id)
+            },
+            warehouse_id: id
+        },
+        _sum: {
+            amount: true
+        }
+    });
+    amountsPerProduct.forEach(amountPerProd => {
+        let dbAmountPerProd = dbAmountsPerProduct.find(dbProd => dbProd.product_id === amountPerProd.product_id);
+        let dbAmount = dbAmountPerProd == null ? 0 : dbAmountPerProd['_sum'].amount;
+        if ((parseFloat(dbAmount) + parseFloat(amountPerProd.amount)) < 0) {
+            throw new BusinessError("INVALID_PRODUCT_AMOUNT", 400);
+        }
+    })
+}
+
+async function validateAndUpdateWh(transactions, id, tx) {
+    let warehouse = await tx.warehouse.findUnique({where: {id: id}});
+    if (warehouse == null) {
+        throw new BusinessError("INVALID_WAREHOUSE", 400);
+    }
+
+    if (warehouse.hazardous !== null) {
+        let hazNotMatches = transactions.some(item => item['hazardous'] !== warehouse.hazardous);
+        if (hazNotMatches) {
+            throw new BusinessError("INVALID_HAZARDOUS_FLAG", 400);
+        }
+    } else {
+        let whHazardous = transactions[0]['hazardous'];
+        await tx.warehouse.update({
+            where: {
+                id: id
+            },
+            data: {
+                hazardous: whHazardous
+            }
+        })
+    }
+}
+
 const createTransaction = (transactions, id)=> {
     return prisma.$transaction(async tx => {
 
-        let warehouse = await tx.warehouse.findUnique({where: {id: id}});
-        if (warehouse == null) {
-            throw new BusinessError("INVALID_WAREHOUSE", 400);
-        }
+        await validateAndUpdateWh(transactions, id, tx);
 
-        if (warehouse.hazardous !== null) {
-            let hazNotMatches = transactions.some(item => item['hazardous'] !== warehouse.hazardous);
-            if(hazNotMatches) {
-                throw new BusinessError("INVALID_HAZARDOUS_FLAG", 400);
-            }
-        } else {
-            let whHazardous = transactions[0]['hazardous'];
-            await tx.warehouse.update({
-                where: {
-                    id: id
-                },
-                data: {
-                    hazardous: whHazardous
-                }
-            })
-        }
-
-        let amountsPerProduct = sumByProduct(transactions);
-        console.log(`Amounts per product: ${JSON.stringify(amountsPerProduct)}`);
-        const dbAmountsPerProduct = await tx.transaction.groupBy({
-            by: "product_id",
-            where: {
-                product_id: {
-                    in: amountsPerProduct.map(prod => prod.product_id)
-                },
-                warehouse_id: id
-            },
-            _sum: {
-              amount: true
-            }
-        });
-        amountsPerProduct.forEach(amountPerProd => {
-            let dbAmountPerProd = dbAmountsPerProduct.find(dbProd => dbProd.product_id === amountPerProd.product_id);
-            let dbAmount = dbAmountPerProd == null ? 0 : dbAmountPerProd['_sum'].amount;
-            if ((parseFloat(dbAmount) + parseFloat(amountPerProd.amount)) < 0) {
-                throw new BusinessError("INVALID_PRODUCT_AMOUNT", 400);
-            }
-        })
+        await validateProductAmount(transactions, id, tx);
 
         await tx.transaction.createMany({
             data: transactions
