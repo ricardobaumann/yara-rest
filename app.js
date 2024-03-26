@@ -44,7 +44,7 @@ app.use(function(err, req, res, next) {
 
 const port = 3001;
 
-initDB().then(()=> console.log("DB initialized"));
+//initDB().then(()=> console.log("DB initialized"));
 app.listen(port, () => console.log(`REST Backend running at ${port}`))
 
 module.exports = app;

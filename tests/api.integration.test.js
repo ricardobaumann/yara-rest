@@ -81,4 +81,28 @@ describe("Create transactions",()=> {
             message: "INVALID_WAREHOUSE"
         });
     })
+
+    it("should validate body attributes",async () => {
+        const response = await request(app)
+            .post(`/warehouses/foobar/transactions`)
+            .send([
+                {
+                    product_id: "",
+                }
+            ]);
+        expect(response.status).toBe(422);
+        let errors = response.body.errors;
+        console.log(errors);
+        expect(errors[0].path).toBe("[0].product_id");
+        expect(errors[0].msg).toBe("Invalid value");
+
+        expect(errors[1].path).toBe("[0].amount");
+        expect(errors[1].msg).toBe("Invalid value");
+
+        expect(errors[2].path).toBe("[0].amount");
+        expect(errors[2].msg).toBe("Invalid value");
+
+        expect(errors[3].path).toBe("[0].hazardous");
+        expect(errors[3].msg).toBe("Invalid value");
+    })
 })
