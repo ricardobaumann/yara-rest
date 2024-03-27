@@ -1,13 +1,13 @@
 var express = require('express');
 var router = express.Router();
-const prisma = require("../db/prisma");
-const createTransaction = require("../service/transactions")
+const createTransaction = require("../service/create-transactions")
+const listWarehouses = require("../service/list-warehouses")
 const bodyParser = require('body-parser');
 const parseUrlencoded = bodyParser.urlencoded({ extended: false });
 const { body, validationResult} = require("express-validator");
 
 router.get('/', async function (req, res, next) {
-  await prisma.warehouse.findMany()
+  await listWarehouses()
       .then(data => {
         res.json(data);
       })

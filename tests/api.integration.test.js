@@ -8,7 +8,7 @@ const warehouseId = crypto.randomUUID().toString();
 const hazardousWhId = crypto.randomUUID().toString();
 const nonHazardousWh = crypto.randomUUID().toString();
 
-describe('GET warehouses', () => {
+describe('List warehouses', () => {
 
     beforeEach(async () => {
         await prisma.$transaction([
