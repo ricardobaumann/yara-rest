@@ -38,12 +38,16 @@ describe('List warehouses', () => {
             {
                 id: warehouseId,
                 code: "ABC",
-                hazardous: null
+                hazardous: null,
+                capacity: 100,
+                occupied: "0"
             },
             {
                 id: hazardousWhId,
                 code: "FOO",
-                hazardous: true
+                hazardous: true,
+                capacity: 100,
+                occupied: "0"
             }
         ]);
     })
@@ -86,22 +90,21 @@ describe("Create transactions",()=> {
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
-                    amount: 100.5
+                    amount: 20,
+                    sizePerUnit: 1
                 },
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
-                    amount: 200.23
+                    amount: 30,
+                    sizePerUnit: 1
                 }
             ]);
         expect(response.status).toBe(200);
         expect(await prisma.transaction.count()).toBe(2);
-        expect(await prisma.warehouse.findUnique({where: {id: warehouseId}}))
-            .toStrictEqual({
-              code: "ABC",
-               hazardous: true,
-               id: warehouseId
-            });
+        let warehouse = await prisma.warehouse.findUnique({where: {id: warehouseId}});
+        expect(warehouse.occupied.toString()).toBe("50");
+        expect(warehouse.hazardous).toBe(true);
     })
 
     it("should not allow non-hazardous products in a hazardous warehouse",async () => {
@@ -111,12 +114,14 @@ describe("Create transactions",()=> {
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: false,
-                    amount: 100.5
+                    amount: 20,
+                    sizePerUnit: 1
                 },
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
-                    amount: 100.5
+                    amount: 20,
+                    sizePerUnit: 1
                 }
             ]);
         expect(response.status).toBe(400);
@@ -133,7 +138,8 @@ describe("Create transactions",()=> {
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
-                    amount: 100.5
+                    amount: 10,
+                    sizePerUnit: 1
                 }
             ]);
         expect(response.status).toBe(400);
@@ -161,12 +167,14 @@ describe("Create transactions",()=> {
                 {
                     product_id: productId,
                     hazardous: false,
-                    amount: -100.5
+                    amount: -100.5,
+                    sizePerUnit: 1
                 },
                 {
                     product_id: productId,
                     hazardous: false,
-                    amount: -100.5
+                    amount: -100.5,
+                    sizePerUnit: 1
                 }
             ]);
         expect(response.status).toBe(400);
@@ -183,17 +191,43 @@ describe("Create transactions",()=> {
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: false,
-                    amount: -100.5
+                    amount: -100.5,
+                    sizePerUnit: 1
                 },
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: false,
-                    amount: -100.5
+                    amount: -100.5,
+                    sizePerUnit: 1
                 }
             ]);
         expect(response.status).toBe(400);
         expect(response.body).toStrictEqual({
             message: "INVALID_PRODUCT_AMOUNT"
+        });
+        expect(await prisma.transaction.count()).toBe(0);
+    })
+
+    it("should not allow more products than warehouse capacity",async () => {
+        const response = await request(app)
+            .post(`/warehouses/${nonHazardousWh}/transactions`)
+            .send([
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: false,
+                    amount: 50,
+                    sizePerUnit: 2
+                },
+                {
+                    product_id: crypto.randomUUID().toString(),
+                    hazardous: false,
+                    amount: 1,
+                    sizePerUnit: 1
+                }
+            ]);
+        expect(response.status).toBe(400);
+        expect(response.body).toStrictEqual({
+            message: "WAREHOUSE_OVERFLOW"
         });
         expect(await prisma.transaction.count()).toBe(0);
     })
@@ -205,7 +239,8 @@ describe("Create transactions",()=> {
                 {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
-                    amount: 100.5
+                    amount: 100.5,
+                    sizePerUnit: 1
                 }
             ]);
         expect(response.status).toBe(400);

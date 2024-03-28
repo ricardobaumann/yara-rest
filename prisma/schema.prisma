@@ -16,6 +16,9 @@ datasource db {
 model Warehouse {
   id           String        @id
   code         String        @unique
+  hazardous    Boolean?
+  capacity     Int           @default(100)
+  occupied     Decimal       @default(0)
   transactions Transaction[]
 }
 
@@ -25,6 +28,7 @@ model Transaction {
   warehouse_id String
   product_id   String
   hazardous    Boolean
+  sizePerUnit  Int       @default(1)
   amount       Decimal   @default(0)
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id])
 

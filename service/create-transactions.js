@@ -1,4 +1,5 @@
 const prisma = require("../db/prisma");
+const {free} = require("yarn/lib/cli");
 
 class BusinessError extends Error{
     constructor(message,code) {
@@ -49,14 +50,10 @@ async function validateProductAmount(transactions, id, tx) {
     })
 }
 
-async function validateAndUpdateHazardousFlag(transactions, id, tx) {
+async function validateAndUpdateHazardousFlag(transactions, id, tx, warehouse) {
     let batchFirstHazardous = transactions[0]['hazardous'];
     if (!(transactions.every(item => item['hazardous'] === batchFirstHazardous))) {
         throw new BusinessError("HAZARDOUS_MIX_NOT_ALLOWED", 400);
-    }
-    let warehouse = await tx.warehouse.findUnique({where: {id: id}});
-    if (warehouse == null) {
-        throw new BusinessError("INVALID_WAREHOUSE", 400);
     }
 
     if (warehouse.hazardous !== null) {
@@ -76,10 +73,29 @@ async function validateAndUpdateHazardousFlag(transactions, id, tx) {
     }
 }
 
+function validateWarehouseCapacity(transactions, warehouse) {
+    let initialValue = 0;
+    let sum = transactions.reduce(
+        (accumulator, currentValue) => accumulator + (parseInt(currentValue['sizePerUnit']) * parseFloat(currentValue['amount'])),
+        initialValue
+    );
+    let freeCapacity = (warehouse.capacity - warehouse.occupied);
+    console.log(`Warehouse free capacity: ${freeCapacity}`);
+    if (freeCapacity < sum) {
+        throw new BusinessError("WAREHOUSE_OVERFLOW", 400);
+    }
+    return (freeCapacity - sum);
+}
+
 const createTransaction = (transactions, id)=> {
     return prisma.$transaction(async tx => {
-
-        await validateAndUpdateHazardousFlag(transactions, id, tx);
+        let warehouse = await tx.warehouse.findUnique({where: {id: id}});
+        if (warehouse == null) {
+            throw new BusinessError("INVALID_WAREHOUSE", 400);
+        }
+        let newFreeCapacity = validateWarehouseCapacity(transactions, warehouse);
+        await validateAndUpdateHazardousFlag(transactions, id, tx, warehouse);
+        const batchId = crypto.randomUUID().toString();
 
         await validateProductAmount(transactions, id, tx);
 
@@ -88,7 +104,7 @@ const createTransaction = (transactions, id)=> {
                 .map(item => {
                 return {
                     warehouse_id: id,
-                    batch_id: crypto.randomUUID().toString(),
+                    batch_id: batchId,
                     id: crypto.randomUUID().toString(),
                     ...item
                 }
@@ -102,6 +118,15 @@ const createTransaction = (transactions, id)=> {
                 throw new BusinessError("UNKNOWN_ERROR", 500);
             }
         })
+
+        await tx.warehouse.update({
+            where: {
+                id: id
+            },
+            data : {
+              occupied: newFreeCapacity
+            }
+        });
     });
 }
 module.exports = createTransaction;
