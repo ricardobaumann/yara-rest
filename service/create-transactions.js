@@ -1,5 +1,4 @@
 const prisma = require("../db/prisma");
-const {free} = require("yarn/lib/cli");
 
 class BusinessError extends Error{
     constructor(message,code) {

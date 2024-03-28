@@ -54,6 +54,57 @@ describe('List warehouses', () => {
 
 });
 
+describe("List transactions",()=> {
+    let id = crypto.randomUUID().toString();
+    let productId = crypto.randomUUID().toString();
+    let batchId = crypto.randomUUID().toString();
+    beforeEach(async () =>{
+        await prisma.$transaction([
+            prisma.transaction.deleteMany(),
+            prisma.warehouse.deleteMany(),
+            prisma.warehouse.create({
+                data: {
+                    id: warehouseId,
+                    code: "ABC"
+                }
+            }),
+            prisma.transaction.create({
+                data: {
+                    id: id,
+                    hazardous: true,
+                    product_id: productId,
+                    warehouse_id: warehouseId,
+                    batch_id: batchId,
+                    amount: 10,
+                    sizePerUnit: 1
+                }
+            })
+        ]);
+    })
+
+    it("should return transactions from a warehouse",async () => {
+        const response = await request(app)
+            .get(`/warehouses/${warehouseId}/transactions`);
+        expect(response.body).toStrictEqual([
+            {
+                id: id,
+                hazardous: true,
+                product_id: productId,
+                warehouse_id: warehouseId,
+                batch_id: batchId,
+                amount: "10",
+                sizePerUnit: 1
+            }
+        ]);
+    })
+
+    it("should return empty on empty warehouse",async () => {
+        const response = await request(app)
+            .get(`/warehouses/${nonHazardousWh}/transactions`);
+        expect(response.body.length).toBe(0);
+    })
+})
+
 describe("Create transactions",()=> {
     beforeEach(async () => {
         await prisma.$transaction([

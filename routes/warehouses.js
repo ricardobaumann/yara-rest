@@ -1,7 +1,8 @@
 var express = require('express');
 var router = express.Router();
-const createTransaction = require("../service/create-transactions")
-const listWarehouses = require("../service/list-warehouses")
+const createTransaction = require("../service/create-transactions");
+const listWarehouses = require("../service/list-warehouses");
+const listTransactions = require("../service/list-transactions");
 const bodyParser = require('body-parser');
 const parseUrlencoded = bodyParser.urlencoded({ extended: false });
 const { body, validationResult} = require("express-validator");
@@ -12,6 +13,13 @@ router.get('/', async function (req, res, next) {
         res.json(data);
       })
 });
+
+router.get("/:id/transactions", async function(req, res){
+    await listTransactions(req.params.id)
+        .then(value => {
+            res.status(200).send(value);
+        })
+})
 
 router.post("/:id/transactions",
     body().isArray().notEmpty(),
