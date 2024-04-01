@@ -7,6 +7,9 @@ const bodyParser = require('body-parser');
 const parseUrlencoded = bodyParser.urlencoded({ extended: false });
 const { body, validationResult} = require("express-validator");
 
+/**
+ * List warehouses
+ */
 router.get('/', async function (req, res, next) {
   await listWarehouses()
       .then(data => {
@@ -14,6 +17,9 @@ router.get('/', async function (req, res, next) {
       })
 });
 
+/**
+ * List transactions by warehouse id
+ */
 router.get("/:id/transactions", async function(req, res){
     await listTransactions(req.params.id)
         .then(value => {
@@ -21,6 +27,9 @@ router.get("/:id/transactions", async function(req, res){
         })
 })
 
+/**
+ * Create transactions
+ */
 router.post("/:id/transactions",
     body().isArray().notEmpty(),
     body("*.product_id").exists().notEmpty().isString(),

@@ -34,7 +34,7 @@ async function validateProductAmount(transactions, id, tx) {
             product_id: {
                 in: amountsPerProduct.map(prod => prod.product_id)
             },
-            warehouse_id: id  
+            warehouse_id: id
         },
         _sum: {
             amount: true
@@ -81,13 +81,19 @@ function validateWarehouseCapacity(transactions, warehouse) {
     console.log(`Batch space: ${sum}`);
     console.log(`Warehouse occupied capacity: ${warehouse.occupied}`);
     let newOccupied = parseFloat(warehouse.occupied) + sum;
-    console.log(`New warehouse occupied: ${newOccupied}`)
+    console.log(`New warehouse occupied capacity: ${newOccupied}`)
     if (newOccupied > warehouse.capacity) {
         throw new BusinessError("WAREHOUSE_OVERFLOW", 400);
     }
     return newOccupied;
 }
 
+/**
+ * Create transactions with given parameters, for a given warehouse id
+ * @param transactions
+ * @param id
+ * @returns {JsPromise<UnwrapTuple<Prisma.PrismaPromise<any>[]>>}
+ */
 const createTransaction = (transactions, id)=> {
     return prisma.$transaction(async tx => {
         let warehouse = await tx.warehouse.findUnique({where: {id: id}});
