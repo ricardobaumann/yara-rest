@@ -23,14 +23,15 @@ model Warehouse {
 }
 
 model Transaction {
-  id           String    @id
-  batch_id     String
-  warehouse_id String
-  product_id   String
-  hazardous    Boolean
-  sizePerUnit  Int       @default(1)
-  amount       Decimal   @default(0)
-  warehouse    Warehouse @relation(fields: [warehouse_id], references: [id])
+  id              String    @id
+  batch_id        String
+  warehouse_id    String
+  product_id      String
+  hazardous       Boolean
+  transactionDate DateTime  @default(now())
+  sizePerUnit     Int       @default(1)
+  amount          Decimal   @default(0)
+  warehouse       Warehouse @relation(fields: [warehouse_id], references: [id])
 
   @@index([warehouse_id])
   @@index([hazardous])

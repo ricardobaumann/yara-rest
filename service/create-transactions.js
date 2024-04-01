@@ -34,7 +34,7 @@ async function validateProductAmount(transactions, id, tx) {
             product_id: {
                 in: amountsPerProduct.map(prod => prod.product_id)
             },
-            warehouse_id: id
+            warehouse_id: id  
         },
         _sum: {
             amount: true
@@ -78,12 +78,14 @@ function validateWarehouseCapacity(transactions, warehouse) {
         (accumulator, currentValue) => accumulator + (parseInt(currentValue['sizePerUnit']) * parseFloat(currentValue['amount'])),
         initialValue
     );
-    let freeCapacity = (warehouse.capacity - warehouse.occupied);
-    console.log(`Warehouse free capacity: ${freeCapacity}`);
-    if (freeCapacity < sum) {
+    console.log(`Batch space: ${sum}`);
+    console.log(`Warehouse occupied capacity: ${warehouse.occupied}`);
+    let newOccupied = parseFloat(warehouse.occupied) + sum;
+    console.log(`New warehouse occupied: ${newOccupied}`)
+    if (newOccupied > warehouse.capacity) {
         throw new BusinessError("WAREHOUSE_OVERFLOW", 400);
     }
-    return (freeCapacity - sum);
+    return newOccupied;
 }
 
 const createTransaction = (transactions, id)=> {
@@ -117,7 +119,7 @@ const createTransaction = (transactions, id)=> {
                 throw new BusinessError("UNKNOWN_ERROR", 500);
             }
         })
-
+        console.log(`Updating warehouse ${id} with occupied capacity: ${newFreeCapacity}`);
         await tx.warehouse.update({
             where: {
                 id: id

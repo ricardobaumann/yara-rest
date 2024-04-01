@@ -1,9 +1,9 @@
 
-const prisma = require("../db/prisma");
+const prisma = require("./db/prisma");
 import { expect, describe, it, beforeEach } from "vitest";
 const request = require('supertest');
 
-const app = require("../app")
+const app = require("./app")
 const warehouseId = crypto.randomUUID().toString();
 const hazardousWhId = crypto.randomUUID().toString();
 const nonHazardousWh = crypto.randomUUID().toString();
@@ -58,6 +58,7 @@ describe("List transactions",()=> {
     let id = crypto.randomUUID().toString();
     let productId = crypto.randomUUID().toString();
     let batchId = crypto.randomUUID().toString();
+    let transactionDate = new Date();
     beforeEach(async () =>{
         await prisma.$transaction([
             prisma.transaction.deleteMany(),
@@ -76,7 +77,8 @@ describe("List transactions",()=> {
                     warehouse_id: warehouseId,
                     batch_id: batchId,
                     amount: 10,
-                    sizePerUnit: 1
+                    sizePerUnit: 1,
+                    transactionDate: transactionDate
                 }
             })
         ]);
@@ -93,7 +95,8 @@ describe("List transactions",()=> {
                 warehouse_id: warehouseId,
                 batch_id: batchId,
                 amount: "10",
-                sizePerUnit: 1
+                sizePerUnit: 1,
+                transactionDate: transactionDate.toISOString()
             }
         ]);
     })
@@ -142,7 +145,8 @@ describe("Create transactions",()=> {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
                     amount: 20,
-                    sizePerUnit: 1
+                    sizePerUnit: 1,
+                    transactionDate: new Date().toISOString()
                 },
                 {
                     product_id: crypto.randomUUID().toString(),
@@ -291,7 +295,8 @@ describe("Create transactions",()=> {
                     product_id: crypto.randomUUID().toString(),
                     hazardous: true,
                     amount: 100.5,
-                    sizePerUnit: 1
+                    sizePerUnit: 1,
+                    transactionDate: new Date().toISOString()
                 }
             ]);
         expect(response.status).toBe(400);

@@ -6,8 +6,14 @@ const initDB = async () => {
         prisma.warehouse.deleteMany(),
         prisma.warehouse.create({
             data: {
-                id: crypto.randomUUID().toString(),
+                id: crypto.randomUUID().toString(),  
                 code: "ABC"
+            }
+        }),
+        prisma.warehouse.create({
+            data: {
+                id: crypto.randomUUID().toString(),
+                code: "FOO"
             }
         })
     ])
